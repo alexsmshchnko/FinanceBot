@@ -222,7 +222,7 @@ func updateProcessing(update *tgbotapi.Update) {
 		}
 	}
 	choiseCode := update.CallbackQuery.Data
-	log.Printf("[&T] %s", time.Now(), choiseCode)
+	log.Printf("[%T] %s", time.Now(), choiseCode)
 
 	switch choiseCode {
 	case internal.BUTTON_CODE_BALANCE:
