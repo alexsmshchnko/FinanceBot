@@ -1,7 +1,7 @@
 package internal
 
 const (
-	TokenNameOnOS              = "your_financial_budget_bot"
+	TokenNameOnOS              = "YOUR_FINANCIAL_BUDGET_BOT"
 	UpdateConfigTimeout        = 60
 	MaxUserCoins        uint16 = 500
 

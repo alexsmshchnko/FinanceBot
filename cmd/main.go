@@ -93,7 +93,7 @@ func showMenu() {
 func showBalance(user *User) {
 	msg := fmt.Sprintf("%s, wallet is empty now %s\n track activity to get some coins", user.name, internal.EMOJI_DONT_KNOW)
 	if coins := user.coins; coins > 0 {
-		msg = fmt.Sprintf("%s, you have %d %s", user.name, internal.EMOJI_COIN)
+		msg = fmt.Sprintf("%s, you have %d %s", user.name, user.coins, internal.EMOJI_COIN)
 	}
 
 	gBot.Send(tgbotapi.NewMessage(gChatId, msg))
