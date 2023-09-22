@@ -2,6 +2,7 @@ package main
 
 import (
 	"financebot/internal"
+	lg "financebot/logger"
 	"fmt"
 	"log"
 	"os"
@@ -11,37 +12,39 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-var gBot *tgbotapi.BotAPI
-var gToken string
-var gChatId int64
-var gUsersInChat Users
-var gUsefullActivities = Activities{
-	// Self-Development
-	{"yoga", "Yoga (15 minutes)", 1},
-	{"meditation", "Meditation (15 minutes)", 1},
-	{"language", "Learning a foreign language (15 minutes)", 1},
-	{"swimming", "Swimming (15 minutes)", 1},
-	{"walk", "Walk (15 minutes)", 1},
-	{"chores", "Chores", 1},
+var (
+	gBot               *tgbotapi.BotAPI
+	gToken             string
+	gChatId            int64
+	gUsersInChat       Users
+	gUsefullActivities = Activities{
+		// Self-Development
+		{"yoga", "Yoga (15 minutes)", 1},
+		{"meditation", "Meditation (15 minutes)", 1},
+		{"language", "Learning a foreign language (15 minutes)", 1},
+		{"swimming", "Swimming (15 minutes)", 1},
+		{"walk", "Walk (15 minutes)", 1},
+		{"chores", "Chores", 1},
 
-	// Work
-	{"work_learning", "Studying work materials (15 minutes)", 1},
-	{"portfolio_work", "Working on a portfolio project (15 minutes)", 1},
-	{"resume_edit", "Resume editing (15 minutes)", 1},
+		// Work
+		{"work_learning", "Studying work materials (15 minutes)", 1},
+		{"portfolio_work", "Working on a portfolio project (15 minutes)", 1},
+		{"resume_edit", "Resume editing (15 minutes)", 1},
 
-	// Creativity
-	{"creative", "Creative creation (15 minutes)", 1},
-	{"reading", "Reading fiction literature (15 minutes)", 1},
-}
-var gRewards = Activities{
-	// Entertainment
-	{"watch_series", "Watching a series (1 episode)", 10},
-	{"watch_movie", "Watching a movie (1 item)", 30},
-	{"social_nets", "Browsing social networks (30 minutes)", 10},
+		// Creativity
+		{"creative", "Creative creation (15 minutes)", 1},
+		{"reading", "Reading fiction literature (15 minutes)", 1},
+	}
+	gRewards = Activities{
+		// Entertainment
+		{"watch_series", "Watching a series (1 episode)", 10},
+		{"watch_movie", "Watching a movie (1 item)", 30},
+		{"social_nets", "Browsing social networks (30 minutes)", 10},
 
-	// Food
-	{"eat_sweets", "300 kcal of sweets", 60},
-}
+		// Food
+		{"eat_sweets", "300 kcal of sweets", 60},
+	}
+)
 
 type User struct {
 	id    int64
@@ -96,7 +99,7 @@ func showBalance(user *User) {
 		msg = fmt.Sprintf("%s, you have %d %s", user.name, user.coins, internal.EMOJI_COIN)
 	}
 
-	gBot.Send(tgbotapi.NewMessage(gChatId, msg))
+	botSend(msg)
 
 	showMenu()
 }
@@ -190,7 +193,7 @@ func processUsefullActivity(usefullActivity *Activity, user *User) {
 			user.name, usefullActivity.name, usefullActivity.coins, internal.EMOJI_COIN, internal.EMOJI_BICEPS, internal.EMOJI_SUNGLASSES, user.coins, internal.EMOJI_COIN)
 	}
 
-	gBot.Send(tgbotapi.NewMessage(gChatId, resultMessage))
+	botSend(resultMessage)
 }
 
 func processReward(reward *Activity, user *User) {
@@ -210,19 +213,30 @@ func processReward(reward *Activity, user *User) {
 		resultMessage = fmt.Sprintf(`%s, the reward "%s" has been paid for, get started! %d %s has been deducted from your account. Now you have %d %s`,
 			user.name, reward.name, reward.coins, internal.EMOJI_COIN, user.coins, internal.EMOJI_COIN)
 	}
-	gBot.Send(tgbotapi.NewMessage(gChatId, resultMessage))
+	botSend(resultMessage)
+}
+
+func botSend(msg string) {
+	gBot.Send(tgbotapi.NewMessage(gChatId, msg))
+}
+
+func logInfo(event, msg string) {
+	//	log.Printf("%s sec| %s:%s", time.Now().Format("05"), event, msg)
+
+	lg.Log.Printf("%s:%s", event, msg)
 }
 
 func updateProcessing(update *tgbotapi.Update) {
 	user, found := getUserFromUpdate(update)
 	if !found {
 		if user, found = saveUserFromUpdate(update); !found {
-			gBot.Send(tgbotapi.NewMessage(gChatId, "User identification failed"))
+			botSend("User identification failed")
 			return
 		}
 	}
 	choiseCode := update.CallbackQuery.Data
-	log.Printf("[%T] %s", time.Now(), choiseCode)
+
+	logInfo("User choice", choiseCode)
 
 	switch choiseCode {
 	case internal.BUTTON_CODE_BALANCE:
@@ -258,7 +272,7 @@ func updateProcessing(update *tgbotapi.Update) {
 		}
 		log.Printf("[%T] !!! Error: Unknown code %s", time.Now(), choiseCode)
 		msg := fmt.Sprintf("%s, I'm sorry, I don't recognize code '%s' %s Please report this error to my creator.", user.name, choiseCode, internal.EMOJI_SAD)
-		gBot.Send(tgbotapi.NewMessage(gChatId, msg))
+		botSend(msg)
 
 	}
 
@@ -314,9 +328,8 @@ func run() (err error) {
 		if isCallbackQueryNil(&update) {
 			updateProcessing(&update)
 		} else if isStartMessage(&update) {
-			log.Printf("Reply: [%s] %s", update.Message.From.UserName, update.Message.Text)
 			gChatId = update.Message.Chat.ID
-
+			lg.Log.Printf("Reply: [%s] %s | ChatID=%d", update.Message.From.UserName, update.Message.Text, gChatId)
 			askToPrintIntro()
 		}
 
