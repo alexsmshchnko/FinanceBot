@@ -2,6 +2,7 @@ package main
 
 import (
 	"financebot/internal"
+	il "financebot/internal"
 	lg "financebot/logger"
 	"fmt"
 	"log"
@@ -66,7 +67,7 @@ func init() {
 	// Delete this line after setting the env var. Keep the token out of the public domain!
 	//_ = os.Setenv(TokenNameOnOS, "INSERT_YOUR_TOKEN")
 
-	if gToken = os.Getenv(internal.TokenNameOnOS); gToken == "" {
+	if gToken = os.Getenv(il.TokenNameOnOS); gToken == "" {
 		panic(fmt.Errorf("failed to load env variable %s", internal.TokenNameOnOS))
 	}
 
@@ -221,9 +222,21 @@ func botSend(msg string) {
 }
 
 func logInfo(event, msg string) {
-	//	log.Printf("%s sec| %s:%s", time.Now().Format("05"), event, msg)
-
 	lg.Log.Printf("%s:%s", event, msg)
+}
+
+func writeFinFile(str string) {
+	//bytes := []byte(str + "\n")
+
+	file, err := os.OpenFile(internal.FINANCE_LOG_FILE, os.O_APPEND, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	if _, err := file.WriteString(fmt.Sprintf("%s\n", str)); err != nil {
+		panic(err)
+	}
 }
 
 func updateProcessing(update *tgbotapi.Update) {
@@ -236,6 +249,7 @@ func updateProcessing(update *tgbotapi.Update) {
 	}
 	choiseCode := update.CallbackQuery.Data
 
+	logInfo("User identification", fmt.Sprintf("%d", user.id))
 	logInfo("User choice", choiseCode)
 
 	switch choiseCode {
@@ -271,6 +285,7 @@ func updateProcessing(update *tgbotapi.Update) {
 			return
 		}
 		log.Printf("[%T] !!! Error: Unknown code %s", time.Now(), choiseCode)
+		logInfo("Unknown choise", choiseCode)
 		msg := fmt.Sprintf("%s, I'm sorry, I don't recognize code '%s' %s Please report this error to my creator.", user.name, choiseCode, internal.EMOJI_SAD)
 		botSend(msg)
 
@@ -320,11 +335,22 @@ func askToPrintIntro() {
 
 func run() (err error) {
 	log.Printf("Authorized on account %s", gBot.Self.UserName)
+	logInfo("Run bot", gBot.Self.UserName)
 
 	updateConfig := tgbotapi.NewUpdate(0)
 	updateConfig.Timeout = internal.UpdateConfigTimeout
 
 	for update := range gBot.GetUpdatesChan(updateConfig) {
+		if update.Message != nil {
+			logInfo("Update chat", fmt.Sprintf("%d", update.Message.Chat.ID))
+			logInfo("from", update.Message.From.UserName)
+			logInfo("text", update.Message.Text)
+
+			if strings.Contains(update.Message.Text, "fin") {
+				writeFinFile(update.Message.Text)
+			}
+		}
+
 		if isCallbackQueryNil(&update) {
 			updateProcessing(&update)
 		} else if isStartMessage(&update) {

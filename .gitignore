@@ -21,3 +21,4 @@
 go.work
 cmd/env.sh
 *.log
+cmd/*.txt

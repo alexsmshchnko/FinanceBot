@@ -28,4 +28,6 @@ const (
 	BUTTON_CODE_USEFUL_ACTIVITIES = "show_useful_activities"
 	BUTTON_CODE_REWARDS           = "show_rewards"
 	BUTTON_CODE_PRINT_MENU        = "print_menu"
+
+	FINANCE_LOG_FILE = "fincance_log.txt"
 )
