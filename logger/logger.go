@@ -17,6 +17,14 @@ const (
 	Debug
 )
 
+// const for log file path
+const (
+	winPath rune = 92 // \
+	//fileName           = string(winPath) + "info"
+	fileName      = "info"
+	fileExtension = ".log"
+)
+
 func isValid(lvl tLogLevel) bool {
 	switch lvl {
 	case Error, Warning, Debug:
@@ -31,10 +39,21 @@ type LogExt struct {
 	logLevel tLogLevel
 }
 
-func NewLog(file *os.File) (r *LogExt) {
+func newLog(file *os.File) (r *LogExt) {
+	var logLvl tLogLevel
+
+	switch os.Getenv("LOG_LEVEL") {
+	case "DEBUG", "INFO":
+		logLvl = 2
+	case "WARNING", "WARN":
+		logLvl = 1
+	default:
+		logLvl = 0
+	}
+
 	r = &LogExt{
 		Logger:   log.New(file, "", log.LstdFlags|log.Lshortfile),
-		logLevel: Error,
+		logLevel: logLvl,
 	}
 
 	return
@@ -52,14 +71,6 @@ func (l *LogExt) String() string {
 
 var Log *LogExt
 
-// const for log file path
-const (
-	winPath rune = 92 // \
-	//fileName           = string(winPath) + "info"
-	fileName      = "info"
-	fileExtension = ".log"
-)
-
 func init() {
 	// set location of log file
 	//var logpath = build.Default.GOPATH + "/src/chat/logger/info.log"
@@ -74,7 +85,7 @@ func init() {
 		panic(err1)
 	}
 
-	Log = NewLog(file)
-	Log.setLogLevel(Debug)
+	Log = newLog(file)
+
 	Log.Println("LogFile : " + logpath + "\n" + Log.String())
 }
